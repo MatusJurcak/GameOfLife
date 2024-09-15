@@ -1,10 +1,15 @@
 #include <iostream>
 #include <thread>
 #include <vector>
+#include <string>
 #include "raylib.h"
 #include "Game.h"
 
 using namespace std;
+
+int underPopulationVal = DEFAULT_UNDERPOPULATION_VALUE;
+int overPopulationVal = DEFAULT_OVERPOPULATION_VALUE;
+int reproductionVal = DEFAULT_REPRODUCTION_VALUE;
 
 void setTimeout(int milisecs) {
     this_thread::sleep_for(chrono::milliseconds(milisecs));
@@ -27,12 +32,12 @@ int nextGenerationCellCheck(vector<vector<int>> &oldMatrix, unsigned int &posY, 
     }
 
     if (oldMatrix[posY][posX] == 1) {
-        if (sumOfAliveNeighbours > 3 || sumOfAliveNeighbours < 2) {
+        if (sumOfAliveNeighbours > overPopulationVal || sumOfAliveNeighbours < underPopulationVal) {
             return 0;
         }
         return 1;
     } else {
-        if (sumOfAliveNeighbours == 3) {
+        if (sumOfAliveNeighbours == reproductionVal) {
             return 1;
         }
     }
@@ -77,6 +82,9 @@ void DrawCells(vector<vector<int>> &matrix) {
 void loop() {
     GameState gameState = RULES;
     bool shouldQuit = false;
+    bool firstInputFocused = false;
+    bool secondInputFocused = false;
+    bool thirdInputFocused = false;
     unsigned int generation = 0;
 
     vector<vector<int>> secondMatrix(NUM_OF_CELLS_IN_COLLUMN, vector<int>(NUM_OF_CELLS_IN_ROW, 0));
@@ -85,34 +93,28 @@ void loop() {
     InitWindow(screenWidth, screenHeight, "Game of Life");
     SetTargetFPS(60);
 
+    Rectangle firstInput = {(screenWidth / 2.0f) + 120, 120, 40, 40};
+    Rectangle secondInput = {(screenWidth / 2.0f) + 120, 180, 40, 40};
+    Rectangle thirdInput = {(screenWidth / 2.0f) + 120, 240, 40, 40};
+    char underPopulationValue[2];
+    underPopulationValue[0] = '0' + DEFAULT_UNDERPOPULATION_VALUE;
+    char overPopulationValue[2];
+    overPopulationValue[0] = '0' + DEFAULT_OVERPOPULATION_VALUE;
+    char reproductionValue[2];
+    reproductionValue[0] = '0' + DEFAULT_REPRODUCTION_VALUE;
+
+    int letterCount1 = 1;
+    int letterCount2 = 1;
+    int letterCount3 = 1;
     Rectangle restartButton = {20, 25, 120, 50};
     Rectangle startButton = {150, 25, 120, 50};
-    Rectangle playButton = {(screenWidth / 2) - 60, (screenHeight - 140), 120, 50};
-    Rectangle quitButton = {(screenWidth / 2) - 60, (screenHeight - 80), 120, 50};
+    Rectangle playButton = {(screenWidth / 2.0f) - 60, (screenHeight - 140), 120, 50};
+    Rectangle quitButton = {(screenWidth / 2.0f - 60), (screenHeight - 80), 120, 50};
     Rectangle randomizeButton = {screenWidth - 300, 25, 150, 50};
     Rectangle toRulesButton = {screenWidth - 140, 25, 120, 50};
 
     char *startButtonText = "START";
     bool startButtonState = false;  // Play button state: false-PAUSED, true-STARTED;
-
-    unsigned short startBtnState = 0;    // Button state: 0-NORMAL, 1-MOUSE_HOVER, 2-PRESSED
-    bool startButtonAction = false;
-
-    unsigned short restartBtnState = 0;    // Button state: 0-NORMAL, 1-MOUSE_HOVER, 2-PRESSED
-    bool restartButtonAction = false;
-
-    unsigned short quitBtnState = 0;    // Button state: 0-NORMAL, 1-MOUSE_HOVER, 2-PRESSED
-    bool quitButtonAction = false;
-
-    unsigned short toRulesButtonState = 0;    // Button state: 0-NORMAL, 1-MOUSE_HOVER, 2-PRESSED
-    bool toRulesButtonAction = false;
-
-    unsigned short randomizeBtnState = 0;    // Button state: 0-NORMAL, 1-MOUSE_HOVER, 2-PRESSED
-    bool randomizeButtonAction = false;
-
-    unsigned short playBtnState = 0;    // Button state: 0-NORMAL, 1-MOUSE_HOVER, 2-PRESSED
-    bool playButtonAction = false;
-
 
     Vector2 mousePoint = {0.0f, 0.0f};
 
@@ -128,71 +130,89 @@ void loop() {
 
         switch (gameState) {
             case RULES: {
-                // Check play button state
-                if (CheckCollisionPointRec(mousePoint, playButton)) {
 
-                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-                        playBtnState = 2;
-                    } else playBtnState = 1;
-
-                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) playButtonAction = true;
-                } else playBtnState = 0;
-
-                // Check quit button state
-                if (CheckCollisionPointRec(mousePoint, quitButton)) {
-
-                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-                        quitBtnState = 2;
-                    } else quitBtnState = 1;
-
-                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) quitButtonAction = true;
-                } else quitBtnState = 0;
-
-
-                // Handle PLAY button click
-                if (playButtonAction) {
-                    gameState = GAME;
-                    playButtonAction = false;
+                if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+                    if (CheckCollisionPointRec(mousePoint, playButton)) {
+                        gameState = GAME;
+                    } else if (CheckCollisionPointRec(mousePoint, quitButton)) {
+                        shouldQuit = true;
+                    } else if (CheckCollisionPointRec(mousePoint, firstInput)) {
+                        firstInputFocused = true;
+                        secondInputFocused = false;
+                        thirdInputFocused = false;
+                    } else if (CheckCollisionPointRec(mousePoint, secondInput)) {
+                        firstInputFocused = false;
+                        secondInputFocused = true;
+                        thirdInputFocused = false;
+                    } else if (CheckCollisionPointRec(mousePoint, thirdInput)) {
+                        firstInputFocused = false;
+                        secondInputFocused = false;
+                        thirdInputFocused = true;
+                    } else {
+                        firstInputFocused = false;
+                        secondInputFocused = false;
+                        thirdInputFocused = false;
+                    }
                 }
 
-                // Handle QUIT button click
-                if (quitButtonAction) {
-                    shouldQuit = true;
+                if (firstInputFocused || secondInputFocused || thirdInputFocused) {
+                    int key = GetCharPressed();
+                    if ((key >= 48) && (key <= 56)) {
+                        if (firstInputFocused) {
+                            underPopulationValue[0] = (char) key;
+                            underPopulationVal = key - 48;
+                            if(underPopulationVal > overPopulationVal){
+                                overPopulationValue[0] = underPopulationValue[0];
+                                overPopulationVal = underPopulationVal;
+                            }
+                            letterCount1++;
+                        }
+                        if (secondInputFocused) {
+                            overPopulationValue[0] = (char) key;
+                            overPopulationVal = key - 48;
+                            if(overPopulationVal < underPopulationVal){
+                                underPopulationValue[0] = overPopulationValue[0];
+                                underPopulationVal = overPopulationVal;
+                            }
+                            letterCount2++;
+                        }
+                        if (thirdInputFocused) {
+                            reproductionValue[0] = (char) key;
+                            reproductionVal = key - 48;
+                            letterCount3++;
+                        }
+                    }
                 }
                 break;
             }
             case GAME: {
 
-                // Check start/pause button state
-                if (CheckCollisionPointRec(mousePoint, startButton)) {
-
-                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-                        startBtnState = 2;
-                    } else startBtnState = 1;
-
-                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) startButtonAction = true;
-                } else startBtnState = 0;
-
-                // Check restart button state
-                if (CheckCollisionPointRec(mousePoint, restartButton)) {
-
-                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-                        restartBtnState = 2;
-                    } else restartBtnState = 1;
-
-                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) restartButtonAction = true;
-                } else restartBtnState = 0;
-
-
-                // Check randomize button state
-                if (CheckCollisionPointRec(mousePoint, randomizeButton)) {
-
-                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-                        randomizeBtnState = 2;
-                    } else randomizeBtnState = 1;
-
-                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) randomizeButtonAction = true;
-                } else randomizeBtnState = 0;
+                if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) {
+                    if (CheckCollisionPointRec(mousePoint, startButton)) {
+                        if (startButtonState) {
+                            startButtonText = "START";
+                        } else {
+                            startButtonText = "PAUSE";
+                        }
+                        startButtonState = !startButtonState;
+                    }
+                    if (CheckCollisionPointRec(mousePoint, restartButton)) {
+                        startButtonState = false;
+                        startButtonText = "START";
+                        generation = 0;
+                        setAllZerosToArray(mainMatrix);
+                    }
+                    if (CheckCollisionPointRec(mousePoint, randomizeButton)) {
+                        startButtonState = false;
+                        startButtonText = "START";
+                        generation = 0;
+                        mainMatrix = getInitialMatrixOnRandomBasis(NUM_OF_CELLS_IN_COLLUMN,
+                                                                   NUM_OF_CELLS_IN_ROW);
+                    }
+                    if (CheckCollisionPointRec(mousePoint, toRulesButton)) {
+                        gameState = RULES;
+                    }
+                }
 
                 if (mousePoint.y > 100 && (IsMouseButtonReleased(MOUSE_BUTTON_LEFT))) {
                     int cellPosX = mousePoint.x / CELL_SIZE;
@@ -200,51 +220,6 @@ void loop() {
                     mainMatrix[cellPosY][cellPosX] = !mainMatrix[cellPosY][cellPosX];
                 }
 
-                // Check 'to settings' button state
-                if (CheckCollisionPointRec(mousePoint, toRulesButton)) {
-
-                    if (IsMouseButtonDown(MOUSE_BUTTON_LEFT)) {
-                        toRulesButtonState = 2;
-                    } else toRulesButtonState = 1;
-
-                    if (IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) toRulesButtonAction = true;
-                } else toRulesButtonAction = 0;
-
-                // Handle PLAY button click
-                if (startButtonAction) {
-                    if (startButtonState) {
-                        startButtonText = "START";
-                    } else {
-                        startButtonText = "PAUSE";
-                    }
-                    startButtonState = !startButtonState;
-                    startButtonAction = false;
-                }
-
-                // Handle RESTART button click
-                if (restartButtonAction) {
-                    startButtonState = false;
-                    startButtonText = "START";
-                    generation = 0;
-                    setAllZerosToArray(mainMatrix);
-                    restartButtonAction = false;
-                }
-
-                // Handle RANDOMIZE button click
-                if (randomizeButtonAction) {
-                    startButtonState = false;
-                    startButtonText = "START";
-                    generation = 0;
-                    mainMatrix = getInitialMatrixOnRandomBasis(NUM_OF_CELLS_IN_COLLUMN,
-                                                               NUM_OF_CELLS_IN_ROW);
-                    randomizeButtonAction = false;
-                }
-
-                // Handle TO SETTINGS button click
-                if (toRulesButtonAction) {
-                    gameState = RULES;
-                    toRulesButtonAction = false;
-                }
                 break;
             }
             default:
@@ -258,11 +233,59 @@ void loop() {
             case RULES: {
                 ClearBackground(WHITE);
 
-                DrawText("RULES", (screenWidth / 2) - 60, (int) 50, 36, RED);
-                DrawText("Any live cell with fewer than two live neighbours dies, as if by underpopulation.", 200, 300, 20, BLACK);
-                DrawText("Any live cell with two or three live neighbours lives on to the next generation.", 200, 340, 20, BLACK);
-                DrawText("Any live cell with more than three live neighbours dies, as if by overpopulation.", 200, 380, 20, BLACK);
-                DrawText("Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.", 160, 420, 20, BLACK);
+                DrawText("RULES", (screenWidth / 2) - (MeasureText("RULES", 36) / 2), (int) 50, 36, RED);
+
+                DrawText("Underpopulation value: ", (int) 400, (int) firstInput.y + 8, 25, BLACK);
+                DrawText("Overpopulation value: ", (int) 400, (int) secondInput.y + 8, 25, BLACK);
+                DrawText("Reproduction value: ", (int) 400, (int) thirdInput.y + 8, 25, BLACK);
+                DrawRectangleRec(firstInput, LIGHTGRAY);
+                DrawText(underPopulationValue, (int) firstInput.x + 20 - (MeasureText(underPopulationValue, 30) / 2),
+                         (int) firstInput.y + 6, 30, MAROON);
+                if (firstInputFocused) {
+                    DrawRectangleLines((int) firstInput.x, (int) firstInput.y, (int) firstInput.width,
+                                       (int) firstInput.height,
+                                       RED);
+                }
+                DrawRectangleRec(secondInput, LIGHTGRAY);
+                DrawText(overPopulationValue, (int) secondInput.x + 20 - (MeasureText(overPopulationValue, 30) / 2),
+                         (int) secondInput.y + 6, 30, MAROON);
+                if (secondInputFocused) {
+                    DrawRectangleLines((int) secondInput.x, (int) secondInput.y, (int) secondInput.width,
+                                       (int) secondInput.height,
+                                       RED);
+                }
+                DrawRectangleRec(thirdInput, LIGHTGRAY);
+                DrawText(reproductionValue, (int) thirdInput.x + 20 - (MeasureText(reproductionValue, 30) / 2),
+                         (int) thirdInput.y + 6, 30, MAROON);
+                if (thirdInputFocused) {
+                    DrawRectangleLines((int) thirdInput.x, (int) thirdInput.y, (int) thirdInput.width,
+                                       (int) thirdInput.height,
+                                       RED);
+                }
+
+                DrawText(
+                        TextFormat("Any alive cell with fewer than %i alive neighbours dies, as if by underpopulation.",
+                                   underPopulationVal), (screenWidth / 2) - (MeasureText(TextFormat(
+                                "Any alive cell with fewer than %i alive neighbours dies, as if by underpopulation.",
+                                underPopulationVal), 20) / 2), 350, 20, BLACK);
+                DrawText(TextFormat("Any alive cell with more than %i alive neighbours dies, as if by overpopulation.",
+                                    overPopulationVal), (screenWidth / 2 - (MeasureText(
+                        TextFormat("Any alive cell with more than %i alive neighbours dies, as if by overpopulation.", overPopulationVal),
+                        20) / 2)), 390, 20, BLACK);
+                DrawText(TextFormat("Any alive cell with %i or %i alive neighbours lives on to the next generation.",
+                                    underPopulationVal, overPopulationVal), (screenWidth / 2 -
+                                                                                                   (MeasureText(
+                                                                                                           TextFormat(
+                                                                                                                   "Any alive cell with %i or %i alive neighbours lives on to the next generation.",
+                                                                                                                   underPopulationVal,
+                                                                                                                   overPopulationVal),
+                                                                                                           20) / 2)),
+                         430, 20, BLACK);
+                DrawText(TextFormat(
+                        "Any dead cell with exactly %i alive neighbours becomes an alive cell, as if by reproduction.",
+                        reproductionVal), (screenWidth / 2) - (MeasureText(TextFormat(
+                        "Any dead cell with exactly %i alive neighbours becomes an alive cell, as if by reproduction.",
+                        reproductionVal), 20) / 2), 470, 20, BLACK);
 
                 // Draw PLAY button
                 DrawRectangleRec(playButton, LIGHTGRAY);
@@ -293,7 +316,7 @@ void loop() {
 
                 // Draw RANDOMIZE box
                 DrawRectangleRec(randomizeButton, LIGHTGRAY);
-                DrawText(TextFormat("RANDOMIZE"), (int) randomizeButton.x + 15, (int) randomizeButton.y + 16, 20,
+                DrawText("RANDOMIZE", (int) randomizeButton.x + 15, (int) randomizeButton.y + 16, 20,
                          BLACK);
 
                 // Draw TO SETTINGS button
