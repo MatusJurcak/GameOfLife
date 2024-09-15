@@ -9,7 +9,7 @@ The official Conway's Game of Life rules states that:
 * Any live cell with more than three live neighbours dies, as if by overpopulation.
 * Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 
-These values can be changed by the user, by clicking on the right input box and then typing the number that user wants.
+These values can be changed by the user, by clicking on the correct input box and then typing the number that user wants.
 After clicking on the `PLAY` button, user is redirected to the window with the grid.
 
 All the cells on the grid are interactive, by clicking a cell you can toggle if it is alive or dead.
